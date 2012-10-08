@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- name属性にproject名指定（任意） -->
+<project name="BomberMine" default="build.full" basedir=".">
+  <!-- 設定 -->
+  <!-- JARファイルにつける名前 -->
+  <property name="jarname" value="bmine" />
+  <property name="dir.dst" value="D:/game/Minecraft/server_bukkit/" />
+
+  <!-- 作業用ディレクトリ -->
+  <property name="dir.temp" value="build/tmp" />
+  <!-- srcディレクトリ -->
+  <property name="dir.src" value="src" />
+  <!-- libディレクトリ -->
+  <property name="dir.lib" value="libs" />
+  <!-- コンパイラ -->
+  <property name="compiler" value="C:/Program Files (x86)/Java/jdk1.6.0_29/bin/javac" />
+
+  <!-- クラスパスの指定 -->
+  <path id="classpath">
+    <fileset dir="libs">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+
+  <!-- JAR作成 -->
+  <!-- JARの作成開始 -->
+  <target name="build.full" description="jarアーカイブのフルビルド" depends="makeJar" />
+  <!-- 作業用ディレクトリのcleanup -->
+  <target name="cleanup" description="作業用ディレクトリのクリーンアップ">
+    <echo message="作業用ディレクトリをクリーンアップします" />
+    <delete dir="${dir.temp}" />
+    <mkdir dir="${dir.temp}" />
+  </target>
+
+  <!-- コンパイル -->
+  <target name="compile" description="パッケージのコンパイル" depends="cleanup">
+    <echo message="コンパイルを行います" />
+    <javac srcdir="${dir.src}" destdir="${dir.temp}" executable="${compiler}" includeantruntime="false">
+      <!-- クラスパスの指定 -->
+      <classpath refid="classpath" />
+      <!-- testパッケージを除く -->
+      <exclude name="test/**" />
+    </javac>
+  </target>
+
+  <!-- クラスファイル以外の必要なファイルのコピー -->
+  <target name="filecopy" description="クラスファイル以外の必要なファイルのコピー" depends="compile">
+    <echo message="クラスファイル以外の必要なファイルのコピーを行います" />
+    <copy file="plugin.yml" todir="${dir.temp}" />
+  </target>
+
+  <!-- JARファイル作成 -->
+  <target name="makeJar" description="JARファイル作成" depends="filecopy">
+    <echo message="JARファイルを作成します" />
+    <jar basedir="${dir.temp}" destfile="${jarname}.jar"  />
+    <copy file="${jarname}.jar" todir="${dir.dst}" overwrite="true" />
+  </target>
+</project>

@@ -1,0 +1,10 @@
+name: BomberMine
+main: com.github.ctrlas.bombermine.BomberMine
+version: 0.1
+
+commands:
+   bm:
+      usage: /bm [command]
+      description: set up field
+#      permission: bombermine.creategame
+#      permission-message: You don't have permission for create game
