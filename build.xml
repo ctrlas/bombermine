@@ -4,7 +4,6 @@
   <!-- 設定 -->
   <!-- JARファイルにつける名前 -->
   <property name="jarname" value="bmine" />
-  <property name="dir.dst" value="D:/game/Minecraft/server_bukkit/" />
 
   <!-- 作業用ディレクトリ -->
   <property name="dir.temp" value="build/tmp" />
@@ -53,6 +52,5 @@
   <target name="makeJar" description="JARファイル作成" depends="filecopy">
     <echo message="JARファイルを作成します" />
     <jar basedir="${dir.temp}" destfile="${jarname}.jar"  />
-    <copy file="${jarname}.jar" todir="${dir.dst}" overwrite="true" />
   </target>
 </project>
