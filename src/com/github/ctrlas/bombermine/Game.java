@@ -14,6 +14,13 @@ public class Game {
     private Vector center;
     private BattleField bf;
     private List<Player> players;
+    private State state;
+    private Player owner;
+
+    enum State{
+        Playing,
+        NotPlaying
+    }
 
     public Game(BomberMine bombermine, Location l, int size_factor, long seed){
         plugin = bombermine;
@@ -25,22 +32,48 @@ public class Game {
         center = l.toVector();
         bf = new BattleField(plugin, world, seed, center, cell_width, cell_height);
 
+        state = State.NotPlaying;
+
         players = new ArrayList<Player>();
     }
 
-    public void setup() {
-        bf.setup();
+    public void start(Player player) {
+        if(state == State.Playing){
+            owner.sendMessage("This battlefield is already started.");
+            return;
+        }
 
+        owner = player;
         for(Player p :world.getPlayers()){
-            p.setWalkSpeed(1.0f);
             if(bf.aabb().isContains(p.getLocation().toVector())){
                 players.add(p);
             }
         }
+        if(players.size() > bf.getMaxPlayers()){
+            for(Player p: players){
+                p.sendMessage("There are too many players in battle field.");
+            }
+            return;
+        }
+        state = State.Playing;
+        bf.setup(players);
     }
 
-    public void finish() {
+    public void finish(Player player) {
+        if(state != State.Playing){
+            player.sendMessage("This battlefield is not started.");
+            return;
+        }
+        if(!owner.equals(player)){
+            player.sendMessage("you are not owner of this battlefield.");
+            return;
+        }
+        owner = null;
+        bf.clearWall();
         players.clear();
+    }
+
+    public void destroy(){
         bf.clear();
     }
 
@@ -52,8 +85,8 @@ public class Game {
         if(!players.contains(player)){
             return;
         }
-        Pos pos = new Pos(center, location);
-        bf.setBomb(player, pos.u, pos.v);
+        //Pos pos = new Pos(center, location);
+        bf.setBomb(player, location);
     }
 
     public boolean canSpawnBomb(Player player, Location location) {
@@ -65,35 +98,15 @@ public class Game {
             return false;
         }
 
-        Pos p = new Pos(center, location);
-        if( (p.u&p.v&1) == 0){
+        if( bf.canSpawnBomb(location)){
             return true;
         }
         return false;
     }
 
-    public class Pos{
-        public int u;
-        public int v;
-
-        public Pos(){
-            u = v = 0;
-        }
-        public Pos(int x, int z){
-            this.u = x;
-            this.v = z;
-        }
-
-        public Pos(Pos p){
-            u = p.u;
-            v = p.v;
-        }
-
-        public Pos(Vector center, Location location){
-            int x = location.getBlockX();
-            int z = location.getBlockZ();
-            u = (x - center.getBlockX()+1)>>1;
-            v = (z - center.getBlockZ()+1)>>1;
-        }
+    /*
+    public Player getOwner() {
+        return owner;
     }
+    */
 }

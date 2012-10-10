@@ -30,7 +30,7 @@ public class BomberMine extends JavaPlugin implements Listener {
     @Override
     public void onDisable(){
         for(Game game : games){
-            game.finish();
+            game.destroy();
         }
     }
 
@@ -64,7 +64,16 @@ public class BomberMine extends JavaPlugin implements Listener {
             }else if(args[0].equalsIgnoreCase("s") || args[0].equalsIgnoreCase("start")){
                 Game game = findGame(player.getLocation());
                 if(game != null){
-                    game.setup();
+                    game.start(player);
+                }else{
+                    sender.sendMessage("game not found at your position");
+                }
+                return true;
+            }else if(args[0].equalsIgnoreCase("f") || args[0].equalsIgnoreCase("finish")){
+                Game game = findGame(player.getLocation());
+                if(game != null){
+                    game.finish(player);
+                    games.remove(game);
                 }else{
                     sender.sendMessage("game not found at your position");
                 }
@@ -72,7 +81,7 @@ public class BomberMine extends JavaPlugin implements Listener {
             }else if(args[0].equalsIgnoreCase("d") || args[0].equalsIgnoreCase("destroy")){
                 Game game = findGame(player.getLocation());
                 if(game != null){
-                    game.finish();
+                    game.destroy();
                     games.remove(game);
                 }else{
                     sender.sendMessage("game not found at your position");

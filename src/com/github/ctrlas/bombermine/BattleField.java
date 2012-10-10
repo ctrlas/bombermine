@@ -1,5 +1,6 @@
 package com.github.ctrlas.bombermine;
 
+import java.util.List;
 import java.util.Random;
 
 import org.bukkit.*;
@@ -38,8 +39,8 @@ public class BattleField {
     private int[][] timer;
 
     final int TICK = 20;
-    int bombdelay = 8;
-    int firedelay = 2;
+    int bombdelay = 3; // time to explosion
+    int firedelay = 3; // time to extinct
 
     BattleField(BomberMine plugin, World world, long seed, Vector center, int width, int height){
         this.plugin = plugin;
@@ -72,7 +73,7 @@ public class BattleField {
         }
     }
 
-    public void setup() {
+    public void setup(List<Player> players) {
         buildWall();
         for(int u = -width/2; u<= width/2; ++u){
             for(int v = -height/2; v<= height/2; ++v){
@@ -87,21 +88,41 @@ public class BattleField {
         }
 
         // プレイヤー用の空き
-        buildCell(-width()/2, -height()/2, CellType.Room);
-        buildCell(-width()/2+1, -height()/2, CellType.Room);
-        buildCell(-width()/2, -height()/2+1, CellType.Room);
+        if(players.size() > 0){
+            buildCell(-width()/2, -height()/2, CellType.Room);
+            buildCell(-width()/2+1, -height()/2, CellType.Room);
+            buildCell(-width()/2, -height()/2+1, CellType.Room);
 
-        buildCell(width()/2, -height()/2, CellType.Room);
-        buildCell(width()/2-1, -height()/2, CellType.Room);
-        buildCell(width()/2, -height()/2+1, CellType.Room);
+            Pos pos = new Pos(-width/2, -height/2);
+            players.get(0).teleport(pos.toVector(center).toLocation(world));
+        }
 
-        buildCell(-width()/2, height()/2, CellType.Room);
-        buildCell(-width()/2+1, height()/2, CellType.Room);
-        buildCell(-width()/2, height()/2-1, CellType.Room);
+        if(players.size() > 1){
+            buildCell(width()/2, -height()/2, CellType.Room);
+            buildCell(width()/2-1, -height()/2, CellType.Room);
+            buildCell(width()/2, -height()/2+1, CellType.Room);
 
-        buildCell(width()/2, height()/2, CellType.Room);
-        buildCell(width()/2-1, height()/2, CellType.Room);
-        buildCell(width()/2, height()/2-1, CellType.Room);
+            Pos pos = new Pos(width/2, -height/2);
+            players.get(1).teleport(pos.toVector(center).toLocation(world));
+        }
+
+        if(players.size() > 2){
+            buildCell(-width()/2, height()/2, CellType.Room);
+            buildCell(-width()/2+1, height()/2, CellType.Room);
+            buildCell(-width()/2, height()/2-1, CellType.Room);
+
+            Pos pos = new Pos(-width/2, height/2);
+            players.get(2).teleport(pos.toVector(center).toLocation(world));
+        }
+
+        if(players.size() > 3){
+            buildCell(width()/2, height()/2, CellType.Room);
+            buildCell(width()/2-1, height()/2, CellType.Room);
+            buildCell(width()/2, height()/2-1, CellType.Room);
+
+            Pos pos = new Pos(width/2, height/2);
+            players.get(3).teleport(pos.toVector(center).toLocation(world));
+        }
     }
 
     public void clear(){
@@ -129,18 +150,27 @@ public class BattleField {
         setCell2x2(u, v, type);
     }
 
-    public void setBomb(Player player, final int u, final int v){
-        map[width/2 + u][height/2 + v] = CellType.Bomb;
-        bomb_owner[width/2 + u][height/2 + v] = player;
+    public void setBomb(Player player, Location location){
+        final Pos pos = new Pos(center, location);
+        map[width/2 + pos.u][height/2 + pos.v] = CellType.Bomb;
+        bomb_owner[width/2 + pos.u][height/2 + pos.v] = player;
 
-        setBlock2x2(u, v, Material.COBBLESTONE.getId(), Material.TNT.getId(), Material.TNT.getId());
+        setBlock2x2(pos.u, pos.v, Material.COBBLESTONE.getId(), Material.TNT.getId(), Material.TNT.getId());
 
-        timer[width/2 + u][height/2 + v] = plugin.getServer().getScheduler().scheduleAsyncDelayedTask(plugin,new Runnable(){
+        timer[width/2 + pos.u][height/2 + pos.v] = plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin,new Runnable(){
             public void run(){
                 plugin.getLogger().info("explode!");
-                explodeBomb(u, v);
+                explodeBomb(pos.u, pos.v);
             }
         }, TICK * bombdelay);
+    }
+
+    public boolean canSpawnBomb(Location location) {
+        final Pos pos = new Pos(center, location);
+        if((pos.u&pos.v&1) == 0){
+            return true;
+        }
+        return false;
     }
 
 
@@ -312,7 +342,7 @@ public class BattleField {
 
         final int uu = u;
         final int vv = v;
-        plugin.getServer().getScheduler().scheduleAsyncDelayedTask(plugin, new Runnable(){
+        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable(){
             public void run(){
                 extinctFire(firepower, uu,vv, -1,0);
                 extinctFire(firepower, uu,vv, +1,0);
@@ -408,5 +438,43 @@ public class BattleField {
     public AABB aabb() {
         return aabb;
     }
+
+    public int getMaxPlayers() {
+        return 4;
+    }
+
+
+    public class Pos{
+        public int u;
+        public int v;
+
+        public Pos(){
+            u = v = 0;
+        }
+        public Pos(int x, int z){
+            this.u = x;
+            this.v = z;
+        }
+
+        public Pos(Pos p){
+            u = p.u;
+            v = p.v;
+        }
+
+        public Pos(Vector center, Location location){
+            int x = location.getBlockX();
+            int z = location.getBlockZ();
+            u = (x - center.getBlockX()+1)>>1;
+            v = (z - center.getBlockZ()+1)>>1;
+        }
+
+        public Vector toVector(Vector center){
+            int x = u * 2 + center.getBlockX();
+            int y = center.getBlockY();
+            int z = v * 2 + center.getBlockZ();
+            return new Vector(x, y, z);
+        }
+    }
+
 
 }
